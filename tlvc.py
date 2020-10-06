@@ -2,6 +2,11 @@ import os
 import moviepy.video.io.ImageSequenceClip
 from PIL import Image
 from mutagen.mp3 import MP3
+# from pytube import Youtube
+
+def download_youtube_video(url):
+  yt = YouTube(url).streams.first().download()
+  print(yt.title)
 
 def is_valid_image(image):
   return image.endswith(".jpg") or image.endswith(".png")
