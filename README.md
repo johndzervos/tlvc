@@ -4,7 +4,7 @@ Add the photos you want to combine in a 'photos' directory. Allowed extenstions 
 The photos are going to be added alphabetically in the video.
 Keep in mind that `11.png` is before `2.png`, so either use leading zeros or strings to name the photos.
 
-Run the Scripy with `python tlvc.py`
+Run the script with `python tlvc.py`
 
 Arguments:
   * youtube video url: the youtube video you want to have as background audio
