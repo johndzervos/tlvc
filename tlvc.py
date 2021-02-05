@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import pytube
 from PIL import Image
@@ -45,8 +46,9 @@ def resize_images(image_files):
   in order to combine them alphabetically later
   """
   print("Resizing images...")
-  image_width = 1500
+  image_width = 2500
   image_counter = 1
+  # TODO resizing sometimes rotates the images
   # Check if RESIZED_IMAGE_FOLDER exists, otherwise create it
   if not os.path.exists(RESIZED_IMAGE_FOLDER):
     os.makedirs(RESIZED_IMAGE_FOLDER)
@@ -102,11 +104,14 @@ def create_timelapse_video(fps):
   video_with_new_audio = video.set_audio(AudioFileClip(f"{AUDIO_FOLDER}/{BACKGROUND_MUSIC_NAME}")) 
   video_with_new_audio.write_videofile(FINAL_VIDEO_NAME, fps=fps, codec="mpeg4")
 
-youtube_url = 'https://www.youtube.com/watch?v=h-Pws1-YzOo'
-trim_start = 10
-trim_end = 30
+# TODO pass them as command line arguments
+# TODO pass the audio file instead of the youtube url
+youtube_url = 'https://www.youtube.com/watch?v=5pOFKmk7ytU'
+trim_start = 18
+trim_end = 70
 
-result_video = download_and_trim_youtube_video(youtube_url, trim_start, trim_end)
+# Comment out next line if you have already downloaded and extracted the audio
+download_and_trim_youtube_video(youtube_url, trim_start, trim_end)
 convert_mp4_to_mp3()
 
 fps = calculcate_fps()
