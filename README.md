@@ -6,6 +6,12 @@ Keep in mind that `11.png` is before `2.png`, so either use leading zeros or str
 
 Run the script with `python tlvc.py`
 
+dependencies:
+* pytube (pip install pytube)
+* PIL (pip install image)
+* mutagen (pip install mutagen)
+* moviepy (pip install moviepy)
+
 Arguments:
   * youtube video url: the youtube video you want to have as background audio
   * start: the start where you want to trim this video
