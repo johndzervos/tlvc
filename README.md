@@ -11,6 +11,7 @@ dependencies:
 * PIL (pip install image)
 * mutagen (pip install mutagen)
 * moviepy (pip install moviepy)
+* resizeimage (pip install python-resize-image)
 
 Arguments:
   * youtube video url: the youtube video you want to have as background audio
