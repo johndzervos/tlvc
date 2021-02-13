@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import os
+import sys, getopt
 import pytube
-from PIL import Image
+from PIL import Image, ImageOps
 from mutagen.mp3 import MP3
 from moviepy.editor import AudioFileClip, VideoFileClip, ImageClip, concatenate
+from resizeimage import resizeimage
 
 BACKGROUND_VIDEO_NAME = "background_music.mp4"
 BACKGROUND_MUSIC_NAME = "background_music.mp3"
@@ -46,19 +48,19 @@ def resize_images(image_files):
   in order to combine them alphabetically later
   """
   print("Resizing images...")
-  image_width = 2500
+  image_width = 500
   image_counter = 1
-  # TODO resizing sometimes rotates the images
   # Check if RESIZED_IMAGE_FOLDER exists, otherwise create it
   if not os.path.exists(RESIZED_IMAGE_FOLDER):
     os.makedirs(RESIZED_IMAGE_FOLDER)
   for image_file in image_files:
+    resized_name = f"{RESIZED_IMAGE_FOLDER}/{image_counter:03d}{IMAGE_SUFFIX}"
     img = Image.open(image_file)
-    wpercent = (image_width/float(img.size[0]))
-    hsize = int((float(img.size[1])*float(wpercent)))
-    img = img.resize((image_width,hsize), Image.ANTIALIAS)
+    img = resizeimage.resize_height(img, image_width)
+    # This is necessary for jpg photos, to avoid unexpected rotation
+    img = ImageOps.exif_transpose(img)
     
-    img.save(f"{RESIZED_IMAGE_FOLDER}/{image_counter:03d}{IMAGE_SUFFIX}")
+    img.save(resized_name)
     image_counter+=1
 
 def calculcate_fps():
@@ -80,7 +82,7 @@ def calculcate_fps():
   # Return fps = 1 / spf
   return 1 / spf
 
-def create_timelapse_video(fps):
+def create_timelapse_video(fps, has_audio):
   """
   Sorts the photos of a directory and combines them to create the video
   """
@@ -101,19 +103,45 @@ def create_timelapse_video(fps):
     image_clips.append(ic)
 
   video = concatenate(image_clips, method="compose")
-  video_with_new_audio = video.set_audio(AudioFileClip(f"{AUDIO_FOLDER}/{BACKGROUND_MUSIC_NAME}")) 
-  video_with_new_audio.write_videofile(FINAL_VIDEO_NAME, fps=fps, codec="mpeg4")
+  if has_audio:
+    video_with_new_audio = video.set_audio(AudioFileClip(f"{AUDIO_FOLDER}/{BACKGROUND_MUSIC_NAME}")) 
+    video_with_new_audio.write_videofile(FINAL_VIDEO_NAME, fps=fps, codec="mpeg4")
+  else:
+    video.write_videofile(FINAL_VIDEO_NAME, fps=fps, codec="mpeg4")
 
-# TODO pass them as command line arguments
-# TODO pass the audio file instead of the youtube url
-youtube_url = 'https://www.youtube.com/watch?v=5pOFKmk7ytU'
+# TODO pass an audio file as alternative of the youtube url
+# TODO pass start and end as arguments. Check if they are valid
 trim_start = 18
 trim_end = 70
+# Example:
+# ./tlvc.py -a https://www.youtube.com/watch?v=5pOFKmk7ytU
 
-# Comment out next line if you have already downloaded and extracted the audio
-download_and_trim_youtube_video(youtube_url, trim_start, trim_end)
-convert_mp4_to_mp3()
+def main(argv):
+  audio_file = None
+  # Defaults to 1 second per frame
+  fps = 1
+  try:
+    opts, args = getopt.getopt(argv,"h:a:o:",["help", "afile=", "ofile="])
+  except getopt.GetoptError:
+    print("tlvc.py -a <youtube url or audiofile>")
+    sys.exit(2)
+  for opt, arg in opts:
+    if opt in ["-h", "--help"]:
+      print("tlvc.py -a <youtube url or audiofile> -o <outputfile>")
+      sys.exit()
+    elif opt in ["-a", "--audio-file"]:
+      audio_file = arg
+      print(f"audio file: {arg}")
+    elif opt in ["-o", "--ofile"]:
+      outputfile = arg
 
-fps = calculcate_fps()
+  if audio_file is not None:
+    download_and_trim_youtube_video(audio_file, trim_start, trim_end)
+    convert_mp4_to_mp3()
+    fps = calculcate_fps()
+  has_audio = audio_file is not None
 
-create_timelapse_video(fps)
+  create_timelapse_video(fps, has_audio)
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
