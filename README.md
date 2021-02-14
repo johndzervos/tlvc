@@ -4,16 +4,18 @@ TLVC (TimeLapse Video Creator) creates a timelapse video
 out of the provided photos in the 'photos' directory.
 The background audio can be passed either as a youtube url or
 as an audio file. The duration of the clip can be determined
-by the passed -s (--start) and -e (--end) arguments.
+by the passed -s and -e arguments.
 If no -s or -e is passed, the whole audio will be used.
-If no audio is passed, fps can be determined through the -f (--fps)
+If no audio is passed, fps can be determined through the -f
 argument. The default fps is 1 second.
 
 Arguments:
+```
 -a <youtube url or .mp3 audiofile>
 -s <start second of the audio>
 -e <end second of the audio>
 -f <fps>
+```
 
 The final video will be named `final.mp4`
 
@@ -33,6 +35,7 @@ Dependencies:
 * moviepy
 * resizeimage
 * pydub
+
 Intall them with:
 `pip install pytube image mutagen moviepy python-resize-image pydub`
 
