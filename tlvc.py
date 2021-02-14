@@ -2,10 +2,12 @@
 import os
 import sys, getopt
 import pytube
+import requests
 from PIL import Image, ImageOps
 from mutagen.mp3 import MP3
 from moviepy.editor import AudioFileClip, VideoFileClip, ImageClip, concatenate
 from resizeimage import resizeimage
+from pydub import AudioSegment
 
 BACKGROUND_VIDEO_NAME = "background_music.mp4"
 BACKGROUND_MUSIC_NAME = "background_music.mp3"
@@ -17,14 +19,39 @@ AUDIO_FOLDER = "audio_files"
 FINAL_VIDEO_NAME = "final.mp4"
 
 def download_and_trim_youtube_video(url, start, end):
+  """
+  Downloads the youtube video and trims it.
+  """
   print("Downloading video...")
   # Check if AUDIO_FOLDER exists, otherwise create it
   if not os.path.exists(AUDIO_FOLDER):
     os.makedirs(AUDIO_FOLDER)
   video = pytube.YouTube(url).streams.first().download(AUDIO_FOLDER)
-  result_video = VideoFileClip(video).subclip(start, end)
+  if start is not None or end is not None:
+    result_video = VideoFileClip(video).subclip(start, end)
+  else:
+    result_video = VideoFileClip(video)
   result_video.write_videofile(f"{AUDIO_FOLDER}/{BACKGROUND_VIDEO_NAME}")
-  return result_video
+
+def trim_audio_file(audio_file, start, end):
+  """
+  Trims the mp3, if the start and end are valid.
+  """
+  try:
+    audio = MP3(audio_file)
+    if start > audio.info.length or end > audio.info.length:
+      print("Invalid start or end for the audio. The whole audio is going to be used.")
+      audio = AudioSegment.from_mp3(audio_file)
+      audio.export(f"{AUDIO_FOLDER}/{BACKGROUND_MUSIC_NAME}", format="mp3")
+    else:
+      audio = AudioSegment.from_mp3(audio_file)
+      extract = audio[start * 1000:end * 1000]
+      # Saving
+      extract.export(f"{AUDIO_FOLDER}/{BACKGROUND_MUSIC_NAME}", format="mp3")  
+  except:
+    print("Could not trim audio file! The whole audio file is going to be used!")
+    audio = AudioSegment.from_mp3(audio_file)
+    audio.export(f"{AUDIO_FOLDER}/{BACKGROUND_MUSIC_NAME}", format="mp3")  
 
 def convert_mp4_to_mp3():
   """
@@ -109,36 +136,72 @@ def create_timelapse_video(fps, has_audio):
   else:
     video.write_videofile(FINAL_VIDEO_NAME, fps=fps, codec="mpeg4")
 
-# TODO pass an audio file as alternative of the youtube url
-# TODO pass start and end as arguments. Check if they are valid
-trim_start = 18
-trim_end = 70
-# Example:
-# ./tlvc.py -a https://www.youtube.com/watch?v=5pOFKmk7ytU
-
 def main(argv):
   audio_file = None
   # Defaults to 1 second per frame
   fps = 1
+  trim_start = None
+  trim_end = None
+
+  arguments_help = """
+  tlvc.py
+    -h help
+    -a <youtube url or .mp3 audiofile>
+    -s <start second of the audio>
+    -e <end second of the audio>
+    -f <fps>
+  """
+
+  help_text = f"""
+    TLVC (TimeLapse Video Creator) creates a timelapse video
+    out of the provided photos in the 'photos' directory.
+    The background audio can be passed either as a youtube url or
+    as an audio file. The duration of the clip can be determined
+    by the passed -s (--start) and -e (--end) arguments.
+    If no -s or -e is passed, the whole audio will be used.
+    If no audio is passed, fps can be determined through the -f (--fps)
+    argument. The default fps is 1 second.
+    Examples:
+    * ./tlvc.py -a https://www.youtube.com/watch?v=5pOFKmk7ytU -s 18 -e 70
+    * ./tlvc.py -a audio.mp3 -s 18 -e 70
+    * ./tlvc.py -f 1
+
+    {arguments_help}
+  """
+
   try:
-    opts, args = getopt.getopt(argv,"h:a:o:",["help", "afile=", "ofile="])
+    opts, args = getopt.getopt(argv,"h:a:s:e:f:",["help", "audio=", "start=", "end=", "fps="])
   except getopt.GetoptError:
-    print("tlvc.py -a <youtube url or audiofile>")
+    print(arguments_help)
     sys.exit(2)
   for opt, arg in opts:
     if opt in ["-h", "--help"]:
-      print("tlvc.py -a <youtube url or audiofile> -o <outputfile>")
+      print(help_text)
       sys.exit()
     elif opt in ["-a", "--audio-file"]:
       audio_file = arg
       print(f"audio file: {arg}")
-    elif opt in ["-o", "--ofile"]:
-      outputfile = arg
+    elif opt in ["-s", "--start"]:
+      trim_start = float(arg)
+    elif opt in ["-e", "--end"]:
+      trim_end = float(arg)
+    elif opt in ["-f", "--fps"]:
+      if audio_file is not None:
+        fps = float(arg)
+      else:
+        print("Audio file duration is going to determine the fps!")
 
   if audio_file is not None:
-    download_and_trim_youtube_video(audio_file, trim_start, trim_end)
-    convert_mp4_to_mp3()
-    fps = calculcate_fps()
+    if audio_file.endswith(".mp3"):
+      trim_audio_file(audio_file, trim_start, trim_end)
+      fps = calculcate_fps()
+    elif requests.get(audio_file).status_code == 200:  
+      download_and_trim_youtube_video(audio_file, trim_start, trim_end)
+      convert_mp4_to_mp3()
+      fps = calculcate_fps()
+    else:
+      print("Unknown audio file")
+      audio_file = None
   has_audio = audio_file is not None
 
   create_timelapse_video(fps, has_audio)
