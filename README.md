@@ -18,6 +18,8 @@ Arguments:
 ```
 
 The final video will be named `final.mp4`
+Sample output:
+[![Demo timelapse video](https://gifs.com/watch?v=fSlJX2DaoFk)](https://www.youtube.com/watch?v=fSlJX2DaoFk)
 
 Add the photos you want to combine in a 'photos' directory. Allowed extenstions are `.jpg` and `.png`
 The photos are going to be added alphabetically in the video.
